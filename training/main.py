@@ -9,7 +9,7 @@ def load_private_key() -> dict:
     return key
 
 
-def get_query() -> str:
+def get_query(start_date: str, end_date: str) -> str:
     return '''
     SELECT
      fullVisitorId
@@ -24,9 +24,10 @@ def get_query() -> str:
      , MAX(totals.transactionRevenue) lifetime_total_revenue
     FROM `bigquery-public-data.google_analytics_sample.ga_sessions_*`,
         UNNEST(hits) as hits, UNNEST(hits.product) AS p
-    WHERE _TABLE_SUFFIX BETWEEN '20160801' AND '20170830'
+    WHERE _TABLE_SUFFIX BETWEEN '{start_date}' AND '{end_date}'
     GROUP BY fullVisitorId , visitId
-    '''
+    LIMIT 100
+    '''.format(start_date=start_date, end_date=end_date)
 
 
 def load_data(query: str, project_id: str, private_key: dict) -> pd.DataFrame:
@@ -37,8 +38,15 @@ def load_data(query: str, project_id: str, private_key: dict) -> pd.DataFrame:
         dialect='standard')
 
 
+def clean_data(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df['visitStartTime'] = pd.to_datetime(df['visitStartTime'], unit='s')
+    df['lifetime_total_revenue'] = (df['lifetime_total_revenue'] / 1000000.0)
+    return df
+
+
 def main():
-    query = get_query()
+    query = get_query(start_date='20160801', end_date='20170830')
     print(query)
     private_key = load_private_key()
     print(private_key)
@@ -46,6 +54,7 @@ def main():
         query=query,
         project_id=private_key['project_id'],
         private_key=private_key)
+
     return df
 
 
