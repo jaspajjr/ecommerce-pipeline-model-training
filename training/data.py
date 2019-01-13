@@ -26,6 +26,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df['visitStartTime'] = pd.to_datetime(df['visitStartTime'], unit='s')
     df['medium'] = df['medium'].replace('(none)', 'direct')
+    df['session_total_revenue'] = df['session_total_revenue'].fillna(0)
     df['lifetime_total_revenue'] = (df['lifetime_total_revenue'] / 1000000.0) \
         .fillna(0)
     return df
