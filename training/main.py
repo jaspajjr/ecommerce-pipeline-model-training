@@ -3,7 +3,7 @@ import os
 import json
 import pandas as pd
 from google.cloud import storage
-from data import get_query
+from data import get_query, clean_data
 
 
 def load_configuration() -> dict:
@@ -47,7 +47,7 @@ def main():
         project_id=private_key['project_id'],
         private_key=private_key)
 
-    store_training_data(df)
+    store_training_data(clean_data(df))
     return df
 
 
