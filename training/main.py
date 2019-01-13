@@ -1,5 +1,15 @@
+import datetime
+import os
 import json
 import pandas as pd
+from google.cloud import storage
+from data import get_query, clean_data
+
+
+def load_configuration() -> dict:
+    with open('/secrets/config-details.json') as f:
+        config = json.load(f)
+    return config
 
 
 def load_private_key() -> dict:
@@ -9,24 +19,15 @@ def load_private_key() -> dict:
     return key
 
 
-def get_query() -> str:
-    return '''
-    SELECT
-     fullVisitorId
-     , visitId
-     , MIN(visitStartTime) visitStartTime
-     , SUM(hits.item.itemRevenue) session_total_revenue
-     , MAX(geoNetwork.country) country
-     , MAX(trafficSource.medium) medium
-     , MAX(device.isMobile) is_mobile
-     , COUNT(DISTINCT(p.productSKU)) unique_products_viewed
-     , COUNT(DISTINCT(hits.item.productSku)) unique_products_bought
-     , MAX(totals.transactionRevenue) lifetime_total_revenue
-    FROM `bigquery-public-data.google_analytics_sample.ga_sessions_*`,
-        UNNEST(hits) as hits, UNNEST(hits.product) AS p
-    WHERE _TABLE_SUFFIX BETWEEN '20160801' AND '20170830'
-    GROUP BY fullVisitorId , visitId
-    '''
+def store_training_data(df: pd.DataFrame):
+    client = storage.Client.from_service_account_json(
+        '/secrets/private-key.json')
+    bucket_name = load_configuration()['bucketname']
+    file_name = 'training_data_{timestamp}.csv'.format(
+        timestamp=datetime.datetime.now())
+    bucket = client.get_bucket(bucket_name)
+    blob = bucket.blob(os.path.join(bucket_name, file_name))
+    blob.upload_from_string(df.to_string())
 
 
 def load_data(query: str, project_id: str, private_key: dict) -> pd.DataFrame:
@@ -38,14 +39,15 @@ def load_data(query: str, project_id: str, private_key: dict) -> pd.DataFrame:
 
 
 def main():
-    query = get_query()
+    query = get_query(start_date='20160801', end_date='20170830')
     print(query)
     private_key = load_private_key()
-    print(private_key)
     df = load_data(
         query=query,
         project_id=private_key['project_id'],
         private_key=private_key)
+
+    store_training_data(clean_data(df))
     return df
 
 
