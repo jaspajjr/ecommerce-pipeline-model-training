@@ -3,6 +3,7 @@ import os
 import json
 import pandas as pd
 from google.cloud import storage
+import model
 from data import get_query, clean_data
 
 
@@ -46,8 +47,15 @@ def main():
         query=query,
         project_id=private_key['project_id'],
         private_key=private_key)
-
+    df = clean_data(df)
+    print(df.info())
+    X = df.drop(
+        columns=['fullVisitorId', 'visitId', 'visitStartTime', 'country',
+                 'medium', 'lifetime_total_revenue']).values
+    y = df['lifetime_total_revenue'].values
     store_training_data(clean_data(df))
+    validation_df = model.validation(X, y)
+    print(validation_df.head())
     return df
 
 
