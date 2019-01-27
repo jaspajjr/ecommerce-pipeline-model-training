@@ -1,0 +1,9 @@
+steps:
+- name: 'ecommerce-model'
+  args:
+  - 'build'
+  - '--tag=jaspajjr/ecommerce-pipeline-model-training'
+  - '--file=Dockerfile'
+  - '.'
+
+kmsKeyName: projects/ecommerce-CLV-examination/locations/global/keyRings/ecommerce-key-ring/cryptoKeys/example-key'

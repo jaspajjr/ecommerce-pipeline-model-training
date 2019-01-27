@@ -42,7 +42,10 @@ def load_data(query: str, project_id: str, private_key: dict) -> pd.DataFrame:
 def main():
     query = get_query(start_date='20160801', end_date='20170830')
     print(query)
-    private_key = load_private_key()
+    try:
+        private_key = load_private_key()
+    except IOError:
+        
     df = load_data(
         query=query,
         project_id=private_key['project_id'],
